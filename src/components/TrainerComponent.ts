@@ -1,4 +1,4 @@
-import Renderer from '../modules/Renderer';
+import Renderer from '../components/Renderer';
 import { TrainerWords } from '../modules/TrainerModule';
 
 class TrainerComponent extends Renderer<TrainerWords> {
