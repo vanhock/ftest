@@ -1,0 +1,35 @@
+{
+  "name": "ftest",
+  "version": "1.0.0",
+  "main": "main.js",
+  "repository": "git@github.com:vanhock/ftest.git",
+  "author": "Ivan Sinyavin <vanhocker@gmail.com>",
+  "license": "MIT",
+  "private": false,
+  "scripts": {
+    "start": "webpack-dev-server --mode development",
+    "test": "jest",
+    "lint": "eslint . --ext .ts",
+    "format": "prettier --write '**/*.ts'",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "typescript": "^4.4.4"
+  },
+  "devDependencies": {
+    "@types/jest": "^27.4.0",
+    "@typescript-eslint/eslint-plugin": "^5.10.0",
+    "@typescript-eslint/parser": "^5.10.0",
+    "clean-webpack-plugin": "^4.0.0",
+    "eslint": "^8.0.0",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-prettier": "^4.0.0",
+    "html-webpack-plugin": "^5.5.1",
+    "jest": "^27.4.5",
+    "prettier": "^2.4.1",
+    "ts-loader": "^9.4.2",
+    "webpack": "^5.79.0",
+    "webpack-cli": "^5.0.1",
+    "webpack-dev-server": "^4.13.3"
+  }
+}
