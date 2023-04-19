@@ -114,14 +114,14 @@ class ExerciseModule {
     }, 0);
   }
 
-  public guessLetter(index: number, letter?: string): boolean {
-    const foundLetter = letter || this.data.randomLetters[index];
+  public guessLetter(index: number): boolean {
+    const letter = this.data.randomLetters[index];
     const currentGuess =
-      this.data.currentWord[this.data.currentLetterIndex] === foundLetter;
+      this.data.currentWord[this.data.currentLetterIndex] === letter;
 
     if (currentGuess) {
       ++this.data.currentLetterIndex;
-      this.data.guessedLetters.push(foundLetter);
+      this.data.guessedLetters.push(letter);
       this.data.randomLetters.splice(index, 1);
       // If all letters guessed
       if (this.data.currentLetterIndex === this.data.currentWord.length) {

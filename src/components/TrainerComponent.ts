@@ -55,21 +55,26 @@ class TrainerComponent extends Renderer<any> {
   };
 
   private handleKeyDown = (event: KeyboardEventInit): void => {
+    let index = -1;
+    let elementToHighlight = null;
     const { key } = event;
-    const result = this.exerciseModule.guessLetter(0, key);
+    const letters = this.container.querySelectorAll(`.${letterClass}`);
+
+    // find matched with first letter and pressed key
+    for (let i = 0; i < letters.length; i++) {
+      if (letters[i].innerHTML.trim() === key) {
+        index = i;
+        elementToHighlight = letters[i];
+        break;
+      }
+    }
+
+    const result = this.exerciseModule.guessLetter(index);
     if (result) {
       this.render();
     } else {
-      const letters = this.container.querySelectorAll(`.${letterClass}`);
-      let element;
-      for (let i = 0; i < letters.length; i++) {
-        if (letters[i].innerHTML.trim() === key) {
-          element = letters[i];
-          break;
-        }
-      }
-      if (element instanceof HTMLElement) {
-        this.makeAnimation(element, 'btn-danger', 3);
+      if (elementToHighlight instanceof HTMLElement) {
+        this.makeAnimation(elementToHighlight, 'btn-danger', 3);
       }
     }
   };
@@ -104,6 +109,7 @@ class TrainerComponent extends Renderer<any> {
       count++;
     }, 100);
   }
+
 
   protected addEventListeners?(): void {
     const els = document.querySelectorAll('.letter');
