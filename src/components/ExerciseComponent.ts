@@ -39,6 +39,7 @@ class ExerciseComponent {
         new LetterComponent({
           text,
           index,
+          tabIndex: -1,
           class: `${
             this.exerciseModule.isQuestionFailed ? 'btn-danger' : 'btn-success'
           } ${answerClass}`,

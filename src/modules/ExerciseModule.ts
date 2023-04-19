@@ -1,3 +1,5 @@
+import { exerciseLocalStorageKey } from '../constants';
+
 interface ExerciseProps {
   onQuestionUpdate: Function;
   onQuestionFail: Function;
@@ -90,6 +92,12 @@ class ExerciseModule {
     return this.data.currentLetterIndex;
   }
 
+  get hasSavedData(): boolean {
+    const data = localStorage.getItem(exerciseLocalStorageKey);
+    console.log(data);
+    return !!data;
+  }
+
   get errorsCount(): number {
     return Object.values(this.data.usedWords).reduce(
       (acc, value: number) => acc + value,
@@ -144,6 +152,10 @@ class ExerciseModule {
       }, 1000);
     }
 
+    if (this.data.currentQuestion > 1) {
+      this.saveToLocalStorage();
+    }
+
     return currentGuess;
   }
 
@@ -160,8 +172,28 @@ class ExerciseModule {
 
     if (this.currentQuestion === this.questionsCount) {
       this.data.isFinished = true;
+      this.clearSavedData();
     }
     ++this.data.currentQuestion;
+  }
+
+  public restoreSavedData(): void {
+    const data = localStorage.getItem(exerciseLocalStorageKey);
+    if (data) {
+      this.data = JSON.parse(data) as ExerciseData;
+    }
+  }
+
+  public clearSavedData(): void {
+    localStorage.removeItem(exerciseLocalStorageKey);
+  }
+
+  private saveToLocalStorage(): void {
+    if (this.data.isFinished) {
+      return;
+    }
+
+    localStorage.setItem(exerciseLocalStorageKey, JSON.stringify(this.data));
   }
 
   private generateWord(): void {

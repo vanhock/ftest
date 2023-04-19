@@ -1,11 +1,18 @@
 import Renderer from '../modules/Renderer';
 import ExerciseComponent from './ExerciseComponent';
 import ExerciseModule from '../modules/ExerciseModule';
-import { letterClass } from '../constants';
+import {
+  dismissModalSelector,
+  letterClass,
+  restoreModalSelector,
+} from '../constants';
+import RestoreModal from '../components/RestoreModal';
 
 class TrainerComponent extends Renderer<any> {
   private readonly exerciseModule: ExerciseModule;
   private exerciseComponent: ExerciseComponent;
+  private restoreModalComponent: RestoreModal;
+  private showModal: boolean = true;
 
   constructor(container: Element, props: any) {
     super(container, props);
@@ -15,6 +22,7 @@ class TrainerComponent extends Renderer<any> {
       onQuestionFail: this.handleQuestionFail,
     });
     this.exerciseComponent = new ExerciseComponent(this.exerciseModule);
+    this.restoreModalComponent = new RestoreModal();
   }
 
   public template(): string {
@@ -42,6 +50,11 @@ class TrainerComponent extends Renderer<any> {
                 `
                 }
               </div>
+              ${
+                this.showRestoreModal()
+                  ? this.restoreModalComponent.template()
+                  : ''
+              }
           </div>
         `;
   }
@@ -54,10 +67,29 @@ class TrainerComponent extends Renderer<any> {
     this.render.apply(this);
   };
 
+  private handleRestoreData = (): void => {
+    this.exerciseModule.restoreSavedData();
+    this.exerciseModule.clearSavedData();
+    this.showModal = false;
+    this.render();
+  };
+
+  private handleDismissModal = (): void => {
+    this.exerciseModule.clearSavedData();
+    this.showModal = false;
+    this.render();
+  };
+
   private handleKeyDown = (event: KeyboardEventInit): void => {
     let index = -1;
     let elementToHighlight = null;
     const { key } = event;
+
+    // Process only letters
+    if (!/^[a-zA-Z]$/.test(`${key}`)) {
+      return;
+    }
+
     const letters = this.container.querySelectorAll(`.${letterClass}`);
 
     // find matched with first letter and pressed key
@@ -92,6 +124,14 @@ class TrainerComponent extends Renderer<any> {
     }
   };
 
+  private showRestoreModal(): boolean {
+    return (
+      this.exerciseModule.currentQuestion === 1 &&
+      this.exerciseModule.hasSavedData &&
+      this.showModal
+    );
+  }
+
   private makeAnimation(
     element: HTMLElement,
     className: string,
@@ -110,20 +150,36 @@ class TrainerComponent extends Renderer<any> {
     }, 100);
   }
 
-
   protected addEventListeners?(): void {
-    const els = document.querySelectorAll('.letter');
+    const els = document.querySelectorAll(`.${letterClass}`);
     els.forEach((el) => {
       el.addEventListener('click', this.handleLetterClick);
     });
     document.addEventListener('keydown', this.handleKeyDown);
+    if (this.exerciseModule.hasSavedData) {
+      const restore = document.querySelector(restoreModalSelector);
+      if (restore) restore.addEventListener('click', this.handleRestoreData);
+      const dismissEls = document.querySelectorAll(dismissModalSelector);
+      dismissEls.forEach((el) =>
+        el.addEventListener('click', this.handleDismissModal)
+      );
+    }
   }
   protected removeEventListeners?(): void {
-    const els = document.querySelectorAll('.letter');
+    const els = document.querySelectorAll(`.${letterClass}`);
     els.forEach((el) => {
       el.removeEventListener('click', this.handleLetterClick);
     });
     document.removeEventListener('keydown', this.handleKeyDown);
+
+    if (this.exerciseModule.hasSavedData) {
+      const restore = document.querySelector(restoreModalSelector);
+      if (restore) restore.removeEventListener('click', this.handleRestoreData);
+      const dismissEls = document.querySelectorAll(dismissModalSelector);
+      dismissEls.forEach((el) =>
+        el.removeEventListener('click', this.handleDismissModal)
+      );
+    }
   }
 }
 
