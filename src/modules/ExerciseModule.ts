@@ -1,114 +1,192 @@
+interface ExerciseProps {
+  onQuestionUpdate: Function
+}
+
 interface ExerciseData {
-    tries: number,
-    word: string[],
-    currentLetterIndex: string,
-    randomSymbols: string[],
-    maxTries: number
+  usedWords: {
+    [key: string]: number;
+  };
+  tries: number;
+  currentQuestion: number;
+  currentWord: string;
+  randomLetters: string[];
+  currentLetterIndex: number;
+  guessedLetters: string[];
+  finished: boolean
 }
 
-export interface ExerciseProps {
-    allWords: string[],
-    usedWords: string[],
-    params: {
-        maxTries: number
-    }
-}
-
-export interface ExerciseResult {
-    tries: number,
-    success: boolean,
-    currentGuess: boolean
+interface ExerciseSettings {
+  questions: number,
+  maxTries: number,
 }
 
 class ExerciseModule {
-    private readonly props: ExerciseProps = {
-        allWords: null,
-        usedWords: null,
-        params: {
-            maxTries: 3
-        }
-    };
-    private data: ExerciseData = {
-        tries: 0,
-        word: null,
-        currentLetterIndex: -1,
-        randomSymbols: null,
-        maxTries: number
-    };
+  private readonly allWords: string[] = [
+    'apple',
+    'function',
+    'timeout',
+    'task',
+    'application',
+    'data',
+    'tragedy',
+    'sun',
+    'symbol',
+    'button',
+    'software',
+  ];
+  private data: ExerciseData = {
+    usedWords: {},
+    tries: 0,
+    currentQuestion: 0,
+    currentWord: '',
+    currentLetterIndex: -1,
+    randomLetters: [],
+    guessedLetters: [],
+    finished: false
+  };
+  private setting: ExerciseSettings = {
+    questions: 6,
+    maxTries: 3,
+  };
+  private readonly onQuestionUpdate: Function;
 
-    constructor(props: ExerciseProps) {
-        this.props = props;
+  constructor(props: ExerciseProps) {
+    this.onQuestionUpdate = props.onQuestionUpdate;
+    this.newQuestion();
+  }
+
+  get isFinished(): boolean {
+    return this.data.finished;
+  }
+
+  get currentQuestion(): number {
+    return this.data.currentQuestion;
+  }
+
+  get questionsCount(): number {
+    return this.setting.questions;
+  }
+
+  get randomLetters(): string[] {
+    return this.data.randomLetters;
+  }
+
+  get guessedLetters(): string[] {
+    return this.data.guessedLetters;
+  }
+
+  get currentWordArray(): string[] {
+    return this.data.currentWord.split('');
+  }
+
+  get errorsCount(): number {
+      return Object.values(this.data.usedWords).reduce((acc, value: number) => acc + value, 0);
+  }
+
+  get wordWithMaxErrors(): string {
+      const values = Object.values(this.data.usedWords);
+      const maxErrors = Math.max(...values);
+      if (maxErrors === 0) {
+        return '-'
+      }
+
+      return Object.keys(this.data.usedWords)[values.indexOf(maxErrors)];
+  }
+
+  get wordsWithNoErrorsCount(): number {
+      return Object.values(this.data.usedWords).reduce((acc, value) => {
+        if (!value) ++acc;
+        return acc;
+      }, 0)
+  }
+
+  public guessLetter(letter: string): boolean {
+    const currentGuess =
+      this.data.currentWord[this.data.currentLetterIndex] === letter;
+
+    if (currentGuess) {
+      ++this.data.currentLetterIndex;
+      this.data.guessedLetters.push(letter);
+      // If all letters guessed
+      if (this.data.currentLetterIndex === this.data.currentWord.length) {
+        this.newQuestion();
+        this.onQuestionUpdate();
+      }
+    } else {
+      ++this.data.tries;
+      this.logErrorToCurrentWord();
     }
 
-    public init() {
-        this.setParams();
-        this.generateWord();
-        this.generateRandomSymbols();
+    if (this.data.tries === this.setting.maxTries) {
+      this.newQuestion();
+      this.onQuestionUpdate();
     }
 
-    get randomSymbols(): string[] {
-        return this.data.randomSymbols;
+    return currentGuess;
+  }
+
+  public newQuestion(): void {
+    if (this.data.finished) {
+      return;
     }
 
+    this.resetCurrentLetterIndex();
+    this.resetGuessedLetters();
+    this.resetTries();
+    this.generateWord();
+    this.generateRandomLetters();
 
-    public checkResult(selectedIndex: number): ExerciseResult {
-        const result:ExerciseResult = {
-            tries: this.data.tries,
-            success: false,
-            currentGuess: false,
-        }
+    if (this.currentQuestion === this.questionsCount) {
+      this.data.finished = true;
+    }
+    ++this.data.currentQuestion;
+  }
 
-        if (!result.tries) {
-            return result;
-        }
+  private generateWord(): void {
+    const indexes = this.allWords.map((_, i) => i);
+    const usedIndexes = Object.keys(this.data.usedWords).map((word) =>
+      this.allWords.indexOf(word)
+    );
 
-        result.currentGuess = this.data.word[this.data.currentLetterIndex] === this.data.word[selectedIndex];
-
-        if (this.data.currentLetterIndex === this.data.word.length) {
-            result.success = true;
-        } else {
-            ++this.data.currentLetterIndex;
-        }
-
-        if (!result.currentGuess) {
-            --this.data.tries;
-        }
-
-        return result;
+    let randomIndex = Math.floor(Math.random() * indexes.length);
+    while (usedIndexes.includes(randomIndex)) {
+      randomIndex = Math.floor(Math.random() * indexes.length);
     }
 
-    static generateWord(): void {
-        const indexes = this.props.allWords.map((_, i) => i);
-        const usedIndexes = this.props.usedWords.map((word) => word.indexOf(this.props.allWords));
+    this.data.currentWord = this.allWords[`${indexes[randomIndex]}`];
+    this.data.usedWords[this.allWords[`${indexes[randomIndex]}`]] = 0;
+  }
 
-        let randomIndex = Math.floor(Math.random() * indexes.length);
-        while (usedIndexes.includes(randomNumber)) {
-            randomIndex = Math.floor(Math.random() * indexes.length);
-        }
-
-        this.data.word = indexes[randomIndex].split('');
-        this.data.currentLetterIndex = 0;
+  private generateRandomLetters(): void {
+    if (!this.data.currentWord) {
+      return;
     }
-
-    static generateRandomSymbols(): void {
-        if (!this.data.word) {
-            return;
-        }
-        const shuffledArray = [...this.props.word];
-        for (let i = shuffledArray.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [shuffledArray[i], shuffledArray[j]] = [shuffledArray[j], shuffledArray[i]];
-        }
-        this.data.randomSymbols = shuffledArray;
+    const shuffledArray = [...this.data.currentWord];
+    for (let i = shuffledArray.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffledArray[i], shuffledArray[j]] = [
+        shuffledArray[j],
+        shuffledArray[i],
+      ];
     }
+    this.data.randomLetters = shuffledArray;
+  }
 
-    static setParams(): void {
-        if (this.props.params) {
-            Object.keys(this.props.params).forEach((key) => {
-                this.data[key] = this.props.params[key];
-            })
-        }
-    }
+  private resetCurrentLetterIndex(): void {
+    this.data.currentLetterIndex = 0;
+  }
+
+  private resetTries(): void {
+    this.data.tries = 0;
+  }
+
+  private resetGuessedLetters(): void {
+    this.data.guessedLetters = [];
+  }
+
+  private logErrorToCurrentWord(): void {
+    this.data.usedWords[this.data.currentWord] = ++this.data.usedWords[this.data.currentWord];
+  }
 }
 
 export default ExerciseModule;
