@@ -4,9 +4,7 @@ class App {
   private trainerComponent: TrainerComponent;
 
   constructor(container: Element) {
-    this.trainerComponent = new TrainerComponent(
-      container, {}
-    );
+    this.trainerComponent = new TrainerComponent(container, {});
   }
 
   public render() {

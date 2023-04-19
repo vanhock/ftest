@@ -1,5 +1,6 @@
 interface ExerciseProps {
-  onQuestionUpdate: Function
+  onQuestionUpdate: Function;
+  onQuestionFail: Function;
 }
 
 interface ExerciseData {
@@ -12,12 +13,12 @@ interface ExerciseData {
   randomLetters: string[];
   currentLetterIndex: number;
   guessedLetters: string[];
-  finished: boolean
+  isFinished: boolean;
 }
 
 interface ExerciseSettings {
-  questions: number,
-  maxTries: number,
+  questions: number;
+  maxTries: number;
 }
 
 class ExerciseModule {
@@ -42,21 +43,27 @@ class ExerciseModule {
     currentLetterIndex: -1,
     randomLetters: [],
     guessedLetters: [],
-    finished: false
+    isFinished: false,
   };
   private setting: ExerciseSettings = {
     questions: 6,
     maxTries: 3,
   };
   private readonly onQuestionUpdate: Function;
+  private readonly onQuestionFail: Function;
 
   constructor(props: ExerciseProps) {
     this.onQuestionUpdate = props.onQuestionUpdate;
+    this.onQuestionFail = props.onQuestionFail;
     this.newQuestion();
   }
 
+  get isQuestionFailed(): boolean {
+    return this.data.tries > this.setting.maxTries;
+  }
+
   get isFinished(): boolean {
-    return this.data.finished;
+    return this.data.isFinished;
   }
 
   get currentQuestion(): number {
@@ -79,54 +86,69 @@ class ExerciseModule {
     return this.data.currentWord.split('');
   }
 
+  get currentLetterIndex(): number {
+    return this.data.currentLetterIndex;
+  }
+
   get errorsCount(): number {
-      return Object.values(this.data.usedWords).reduce((acc, value: number) => acc + value, 0);
+    return Object.values(this.data.usedWords).reduce(
+      (acc, value: number) => acc + value,
+      0
+    );
   }
 
   get wordWithMaxErrors(): string {
-      const values = Object.values(this.data.usedWords);
-      const maxErrors = Math.max(...values);
-      if (maxErrors === 0) {
-        return '-'
-      }
+    const values = Object.values(this.data.usedWords);
+    const maxErrors = Math.max(...values);
+    if (maxErrors === 0) {
+      return '-';
+    }
 
-      return Object.keys(this.data.usedWords)[values.indexOf(maxErrors)];
+    return Object.keys(this.data.usedWords)[values.indexOf(maxErrors)];
   }
 
   get wordsWithNoErrorsCount(): number {
-      return Object.values(this.data.usedWords).reduce((acc, value) => {
-        if (!value) ++acc;
-        return acc;
-      }, 0)
+    return Object.values(this.data.usedWords).reduce((acc, value) => {
+      if (!value) ++acc;
+      return acc;
+    }, 0);
   }
 
-  public guessLetter(letter: string): boolean {
+  public guessLetter(index: number, letter?: string): boolean {
+    const foundLetter = letter || this.data.randomLetters[index];
     const currentGuess =
-      this.data.currentWord[this.data.currentLetterIndex] === letter;
+      this.data.currentWord[this.data.currentLetterIndex] === foundLetter;
 
     if (currentGuess) {
       ++this.data.currentLetterIndex;
-      this.data.guessedLetters.push(letter);
+      this.data.guessedLetters.push(foundLetter);
+      this.data.randomLetters.splice(index, 1);
       // If all letters guessed
       if (this.data.currentLetterIndex === this.data.currentWord.length) {
-        this.newQuestion();
-        this.onQuestionUpdate();
+        setTimeout(() => {
+          this.newQuestion();
+          this.onQuestionUpdate();
+        }, 500);
       }
     } else {
       ++this.data.tries;
       this.logErrorToCurrentWord();
     }
-
-    if (this.data.tries === this.setting.maxTries) {
-      this.newQuestion();
-      this.onQuestionUpdate();
+    // If tries exceeded
+    if (this.isQuestionFailed) {
+      this.data.guessedLetters = this.currentWordArray;
+      this.onQuestionFail();
+      setTimeout(() => {
+        this.newQuestion();
+        this.onQuestionUpdate();
+      }, 1000);
     }
 
     return currentGuess;
   }
 
   public newQuestion(): void {
-    if (this.data.finished) {
+    if (this.data.isFinished) {
       return;
     }
 
@@ -137,7 +159,7 @@ class ExerciseModule {
     this.generateRandomLetters();
 
     if (this.currentQuestion === this.questionsCount) {
-      this.data.finished = true;
+      this.data.isFinished = true;
     }
     ++this.data.currentQuestion;
   }
@@ -185,7 +207,9 @@ class ExerciseModule {
   }
 
   private logErrorToCurrentWord(): void {
-    this.data.usedWords[this.data.currentWord] = ++this.data.usedWords[this.data.currentWord];
+    this.data.usedWords[this.data.currentWord] = ++this.data.usedWords[
+      this.data.currentWord
+    ];
   }
 }
 

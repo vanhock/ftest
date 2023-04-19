@@ -1,17 +1,20 @@
 export interface LetterProps {
   class?: string;
   text: string | number;
+  index: number;
   onClick?: Function;
 }
 
 class LetterComponent {
   private props: LetterProps;
-  constructor(props: LetterProps = { class: 'btn-primary', text: '' }) {
+  constructor(
+    props: LetterProps = { class: 'btn-primary', text: '', index: 0 }
+  ) {
     this.props = props;
   }
 
   public template() {
-    return `<button type="button" class="btn ${this.props.class}" data-id="${this.props.text}">
+    return `<button type="button" class="btn ${this.props.class}" data-index="${this.props.index}" style="margin: 0 3px; width: 40px; height: 40px">
                 ${this.props.text}
             </button>`;
   }
