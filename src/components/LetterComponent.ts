@@ -28,13 +28,5 @@ class LetterComponent {
                 ${this.props.text}
             </button>`;
   }
-
-  protected addEventListeners(): void {
-    console.log('add listener letter', this.props.text);
-  }
-
-  protected removeEventListeners?(): void {
-    console.log('remover listener', this.props.text);
-  }
 }
 export default LetterComponent;

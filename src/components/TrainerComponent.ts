@@ -12,7 +12,6 @@ class TrainerComponent extends Renderer<any> {
   private readonly exerciseModule: ExerciseModule;
   private exerciseComponent: ExerciseComponent;
   private restoreModalComponent: RestoreModal;
-  private showModal: boolean = true;
 
   constructor(container: Element, props: any) {
     super(container, props);
@@ -27,36 +26,36 @@ class TrainerComponent extends Renderer<any> {
 
   public template(): string {
     return `
-          <div class="container py-5">
-              <div class="d-flex flex-column align-items-center w-100 text-center mx-auto">
-                ${
-                  !this.exerciseModule.isFinished
-                    ? `
-                    <h2 class="mb-5">English Vocabulary Trainer</h2>
-                    <p class="lead mb-1">Form a valid English word using the given letters</p>
-                    <p class="mb-5">Question <span id="current_question">
-                        ${this.exerciseModule.currentQuestion}</span> of 
-                        <span id="total_questions">${
-                          this.exerciseModule.questionsCount
-                        }</span>
-                    </p>
-                    ${this.exerciseComponent.template()}
-                `
-                    : `
-                    <h2 class="mb-5">Results:</h2>
-                    <p>Guessed words without errors: ${this.exerciseModule.wordsWithNoErrorsCount}</p>
-                    <p>Errors total: ${this.exerciseModule.errorsCount}</p>
-                    <p>Word with max erorrs: ${this.exerciseModule.wordWithMaxErrors}</p>
-                `
-                }
-              </div>
-              ${
-                this.showRestoreModal()
-                  ? this.restoreModalComponent.template()
-                  : ''
-              }
-          </div>
-        `;
+      <div class="container py-5">
+        <div class="d-flex flex-column align-items-center w-100 text-center mx-auto">
+          ${
+            !this.exerciseModule.isFinished
+              ? `
+              <h2 class="mb-5">English Vocabulary Trainer</h2>
+              <p class="lead mb-1">Form a valid English word using the given letters</p>
+              <p class="mb-5">Question <span id="current_question">
+                  ${this.exerciseModule.currentQuestion}</span> of 
+                  <span id="total_questions">${
+                    this.exerciseModule.questionsCount
+                  }</span>
+              </p>
+              ${this.exerciseComponent.template()}
+          `
+              : `
+              <h2 class="mb-5">Results:</h2>
+              <p>Guessed words without errors: ${this.exerciseModule.wordsWithNoErrorsCount}</p>
+              <p>Errors total: ${this.exerciseModule.errorsCount}</p>
+              <p>Word with max erorrs: ${this.exerciseModule.wordWithMaxErrors}</p>
+          `
+          }
+        </div>
+        ${
+          this.exerciseModule.isShowRestoreModal
+            ? this.restoreModalComponent.template()
+            : ''
+        }
+      </div>
+    `;
   }
 
   private handleQuestionUpdate = (): void => {
@@ -70,13 +69,11 @@ class TrainerComponent extends Renderer<any> {
   private handleRestoreData = (): void => {
     this.exerciseModule.restoreSavedData();
     this.exerciseModule.clearSavedData();
-    this.showModal = false;
     this.render();
   };
 
   private handleDismissModal = (): void => {
     this.exerciseModule.clearSavedData();
-    this.showModal = false;
     this.render();
   };
 
@@ -123,14 +120,6 @@ class TrainerComponent extends Renderer<any> {
       }
     }
   };
-
-  private showRestoreModal(): boolean {
-    return (
-      this.exerciseModule.currentQuestion === 1 &&
-      this.exerciseModule.hasSavedData &&
-      this.showModal
-    );
-  }
 
   private makeAnimation(
     element: HTMLElement,

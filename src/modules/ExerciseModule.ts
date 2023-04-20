@@ -7,7 +7,7 @@ interface ExerciseProps {
 
 interface ExerciseData {
   usedWords: {
-    [key: string]: number;
+    [key: string]: number; // word: errors count
   };
   tries: number;
   currentQuestion: number;
@@ -53,15 +53,22 @@ class ExerciseModule {
   };
   private readonly onQuestionUpdate: Function;
   private readonly onQuestionFail: Function;
+  private isShowModal: boolean = false;
 
   constructor(props: ExerciseProps) {
     this.onQuestionUpdate = props.onQuestionUpdate;
     this.onQuestionFail = props.onQuestionFail;
     this.newQuestion();
+    this.setRestoreModalState();
+    this.addHistoryListeners();
+  }
+
+  get isShowRestoreModal(): boolean {
+    return this.isShowModal;
   }
 
   get isQuestionFailed(): boolean {
-    return this.data.tries > this.setting.maxTries;
+    return this.data.usedWords[this.data.currentWord] === 4;
   }
 
   get isFinished(): boolean {
@@ -92,10 +99,13 @@ class ExerciseModule {
     return this.data.currentLetterIndex;
   }
 
+  // For test purposes only
+  get maxTries(): number {
+    return this.setting.maxTries;
+  }
+
   get hasSavedData(): boolean {
-    const data = localStorage.getItem(exerciseLocalStorageKey);
-    console.log(data);
-    return !!data;
+    return !!localStorage.getItem(exerciseLocalStorageKey);
   }
 
   get errorsCount(): number {
@@ -133,6 +143,7 @@ class ExerciseModule {
       this.data.randomLetters.splice(index, 1);
       // If all letters guessed
       if (this.data.currentLetterIndex === this.data.currentWord.length) {
+        this.updateHistoryState(true);
         setTimeout(() => {
           this.newQuestion();
           this.onQuestionUpdate();
@@ -145,6 +156,7 @@ class ExerciseModule {
     // If tries exceeded
     if (this.isQuestionFailed) {
       this.data.guessedLetters = this.currentWordArray;
+      this.updateHistoryState(true);
       this.onQuestionFail();
       setTimeout(() => {
         this.newQuestion();
@@ -152,9 +164,7 @@ class ExerciseModule {
       }, 1000);
     }
 
-    if (this.data.currentQuestion > 1) {
-      this.saveToLocalStorage();
-    }
+    this.saveToLocalStorage();
 
     return currentGuess;
   }
@@ -175,24 +185,35 @@ class ExerciseModule {
       this.clearSavedData();
     }
     ++this.data.currentQuestion;
+    this.updateHistoryState();
+    this.saveToLocalStorage();
   }
 
   public restoreSavedData(): void {
     const data = localStorage.getItem(exerciseLocalStorageKey);
     if (data) {
       this.data = JSON.parse(data) as ExerciseData;
+      // reset history to current state, to prevent navigation to state, before restore from LocalStorage
+      // ToDo: We can also add history restoration in future
+      this.updateHistoryState(true);
     }
   }
 
   public clearSavedData(): void {
     localStorage.removeItem(exerciseLocalStorageKey);
+    this.isShowModal = false;
+  }
+
+  private setRestoreModalState(): void {
+    this.isShowModal = this.currentQuestion === 1 && this.hasSavedData;
   }
 
   private saveToLocalStorage(): void {
-    if (this.data.isFinished) {
+    const hasData =
+      this.data.currentQuestion > 1 || this.data.guessedLetters.length;
+    if (!hasData || this.data.isFinished) {
       return;
     }
-
     localStorage.setItem(exerciseLocalStorageKey, JSON.stringify(this.data));
   }
 
@@ -242,6 +263,24 @@ class ExerciseModule {
     this.data.usedWords[this.data.currentWord] = ++this.data.usedWords[
       this.data.currentWord
     ];
+  }
+
+  private updateHistoryState(replace: boolean = false): void {
+    replace
+      ? history.replaceState(this.data, '')
+      : history.pushState(this.data, '');
+  }
+
+  private restoreDataFromHistory = (event: PopStateEvent): void => {
+    const data = event.state as ExerciseData;
+    if (data) {
+      this.data = data;
+      this.onQuestionUpdate();
+    }
+  };
+
+  private addHistoryListeners(): void {
+    window.addEventListener('popstate', this.restoreDataFromHistory);
   }
 }
 
